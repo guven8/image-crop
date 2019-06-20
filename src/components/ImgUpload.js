@@ -1,5 +1,6 @@
 import React from "react";
-import { CropImage } from "./CropImage";
+import ReactCrop from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 
 const maxImageSize = 1000000; // 1MB
 
@@ -31,54 +32,59 @@ export class ImgUpload extends React.Component {
     this.setState({ uploadedImageUrl: null });
   };
 
-  handleCropComplete = crop => {
+  handleSetCrop = crop => {
     this.setState({ crop });
   };
 
-  handleSaveCroppedImage = async () => {
-    const { uploadedImageUrl, crop } = this.state;
-    if (!uploadedImageUrl || !crop) return;
-    const ctx = this.refs.canvas.getContext("2d");
+  handleSaveImage = async () => {
+    const { crop, uploadedImageUrl } = this.state;
     const image = new Image();
     image.src = uploadedImageUrl;
+    const canvas = document.createElement("canvas");
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
-    ctx.width = crop.width;
-    ctx.height = crop.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext("2d");
 
-    image.onload = () => {
-      ctx.drawImage(
-        image,
-        crop.x * scaleX,
-        crop.y * scaleY,
-        crop.width * scaleX,
-        crop.height * scaleY,
-        0,
-        0,
-        crop.width,
-        crop.height
-      );
-    };
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
 
-    this.setState({
-      croppedImageUrl: await this.saveImage(
-        this.refs.canvas.toDataURL("image/jpeg")
-      )
+    // As a blob
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(blob => {
+        blob.name = "cropped_image";
+        resolve(blob);
+      }, "image/jpeg");
     });
+
+    // As Base64 string
+    this.setState({ croppedImageUrl: URL.createObjectURL(blob) }); // my image preview
+    // this.setState({ croppedImageUrl: await this.saveImage(canvas.toDataURL("image/jpeg")) });
   };
 
   saveImage(imageFile) {
     return Promise.resolve("http://lorempixel.com/800/100/cats/");
   }
 
-  printPreview = () => {
+  printPreview = async () => {
+    const { croppedImageUrl } = this.state;
     const printPageSource =
       "<html><head><script>function step1(){\n" +
       "setTimeout('step2()', 10);}\n" +
       "function step2(){window.print();window.close()}\n" +
       "</script></head><body onload='step1()'>\n" +
       "<img src='" +
-      this.state.croppedImageUrl +
+      croppedImageUrl +
       "' /></body></html>";
     const pwa = window.open("", "_new");
     pwa.document.open();
@@ -87,7 +93,7 @@ export class ImgUpload extends React.Component {
   };
 
   render() {
-    const { error, uploadedImageUrl, croppedImageUrl } = this.state;
+    const { error, uploadedImageUrl, crop, croppedImageUrl } = this.state;
 
     return (
       <div>
@@ -108,9 +114,12 @@ export class ImgUpload extends React.Component {
         </div>
         <div className="preview">
           {!!uploadedImageUrl ? (
-            <CropImage
+            <ReactCrop
               src={uploadedImageUrl}
-              onCropComplete={this.handleCropComplete}
+              crop={crop}
+              onChange={this.handleSetCrop}
+              maxWidth={800}
+              maxHeight={100}
             />
           ) : !!error ? (
             <p className="error" style={{ color: "red" }}>
@@ -120,12 +129,12 @@ export class ImgUpload extends React.Component {
             <p>No files currently selected</p>
           )}
         </div>
-        <canvas ref="canvas" />
+        {!!croppedImageUrl && <img src={croppedImageUrl} />}
         <div className="preview-save-buttons">
           <button onClick={this.printPreview} disabled={!croppedImageUrl}>
             Print Preview
           </button>
-          <button onClick={this.handleSaveCroppedImage}>Save Image</button>
+          <button onClick={this.handleSaveImage}>Save Image</button>
         </div>
       </div>
     );
