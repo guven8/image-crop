@@ -23,3 +23,7 @@ code {
   max-width: 300px;
   margin: 0 auto;
 }
+
+.error {
+  color: red;
+}

@@ -32,6 +32,10 @@ export class ImgUpload extends React.Component {
     this.setState({ uploadedImageUrl: null });
   };
 
+  handleClearCroppedImageUrl = () => {
+    this.setState({ croppedImageUrl: null });
+  };
+
   handleSetCrop = crop => {
     this.setState({ crop });
   };
@@ -114,27 +118,34 @@ export class ImgUpload extends React.Component {
         </div>
         <div className="preview">
           {!!uploadedImageUrl ? (
-            <ReactCrop
-              src={uploadedImageUrl}
-              crop={crop}
-              onChange={this.handleSetCrop}
-              maxWidth={800}
-              maxHeight={100}
-            />
+            <>
+              <span>Drag on the image to select a cropped area</span>
+              <ReactCrop
+                src={uploadedImageUrl}
+                crop={crop}
+                onChange={this.handleSetCrop}
+                maxWidth={800}
+                maxHeight={100}
+              />
+            </>
           ) : !!error ? (
-            <p className="error" style={{ color: "red" }}>
-              {error}
-            </p>
+            <p className="error">{error}</p>
           ) : (
             <p>No files currently selected</p>
           )}
         </div>
         {!!croppedImageUrl && <img src={croppedImageUrl} />}
         <div className="preview-save-buttons">
-          <button onClick={this.printPreview} disabled={!croppedImageUrl}>
-            Print Preview
+          <button
+            disabled={!croppedImageUrl}
+            onClick={this.handleClearCroppedImageUrl}
+          >
+            Clear Crop
           </button>
-          <button onClick={this.handleSaveImage}>Save Image</button>
+          <button onClick={this.printPreview} disabled={!croppedImageUrl}>
+            Print Crop
+          </button>
+          <button onClick={this.handleSaveImage}>Save Crop</button>
         </div>
       </div>
     );
